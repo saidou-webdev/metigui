@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "dotenv": "^16.4.7",
+    "lucide-react": "^0.477.0",
+    "mysql2": "^3.13.0",
+    "react-router-dom": "^7.2.0",
+    "tailwind-merge": "^3.0.2"
+  }
+}
