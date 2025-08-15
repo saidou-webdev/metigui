@@ -12,17 +12,17 @@ const QuoteRequestPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, currentUser } = useAuth();
 
-  const [business, setBusiness] = useState<Business | null>(null);
-  const [formData, setFormData] = useState({
+  const [business, setBusiness] = React.useState<Business | null>(null);
+  const [formData, setFormData] = React.useState({
     name: '',
     email: '',
     phone: '',
     city: '',
     description: ''
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSuccess, setIsSuccess] = React.useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -66,8 +66,8 @@ const QuoteRequestPage: React.FC = () => {
     if (!formData.phone.trim()) newErrors.phone = 'Le téléphone est requis';
     if (!formData.description.trim()) {
       newErrors.description = 'La description est requise';
-    } else if (formData.description.length < 20) {
-      newErrors.description = 'La description doit contenir au moins 20 caractères';
+    } else if (formData.description.length < 10) {
+      newErrors.description = 'La description doit contenir au moins 10 caractères';
     }
 
     setErrors(newErrors);
@@ -101,9 +101,12 @@ const QuoteRequestPage: React.FC = () => {
         }
 
       } catch (error: any) {
-        if (error.response) {
+        // Gestion améliorée de l'erreur
+        if (error.response && error.response.data) {
           console.error("Erreur backend :", error.response.data);
-          alert(error.response.data.message);
+          // Essaye d'extraire le message d'erreur
+          const backendMessage = error.response.data.message || JSON.stringify(error.response.data);
+          alert(`Erreur : ${backendMessage}`);
         } else {
           console.error("Erreur réseau ou authentification :", error.message);
           alert("Veuillez vous connecter à votre compte ou en créer un.");
@@ -118,11 +121,15 @@ const QuoteRequestPage: React.FC = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Professionnel non trouvé</h2>
+          <h2 className="text-2xl font-bold text-[#202124]">Professionnel non trouvé</h2>
           <p className="mt-2 text-gray-600">
             Le professionnel que vous recherchez n'existe pas ou a été supprimé.
           </p>
-          <Button variant="primary" className="mt-4" onClick={() => navigate('/search')}>
+          <Button
+            variant="primary"
+            className="mt-4 bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+            onClick={() => navigate('/search')}
+          >
             Retour à la recherche
           </Button>
         </div>
@@ -139,9 +146,9 @@ const QuoteRequestPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Demande envoyée avec succès !</h2>
-          <p className="text-gray-600 mb-6">
-            Votre demande de devis a été envoyée à {business.name}. Vous serez notifié dès que le professionnel aura répondu.
+          <h2 className="text-2xl font-bold text-[#202124] mb-2">Demande envoyée avec succès !</h2>
+          <p className="text-gray-700 mb-6">
+            Votre demande de devis a été envoyée à <span className="font-semibold">{business.name}</span>. Vous serez notifié dès que le professionnel aura répondu.
           </p>
           <p className="text-gray-500 text-sm">Vous allez être redirigé vers votre tableau de bord...</p>
         </div>
@@ -153,9 +160,9 @@ const QuoteRequestPage: React.FC = () => {
     <div className="bg-gray-50 min-h-screen py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Demande de devis</h1>
-          <p className="mt-2 text-gray-600">
-            Envoyez une demande à <span className="font-medium">{business.name}</span>
+          <h1 className="text-3xl font-bold text-[#202124]">Demande de devis</h1>
+          <p className="mt-2 text-gray-700">
+            Envoyez une demande à <span className="font-medium text-[#2C3E50]">{business.name}</span>
           </p>
         </div>
 
@@ -171,6 +178,9 @@ const QuoteRequestPage: React.FC = () => {
                   placeholder="Votre nom complet"
                   error={errors.name}
                   required
+                  inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
+                  labelClassName="text-[#202124]"
+                  errorClassName="text-[#E85D04]"
                 />
 
                 <Input
@@ -182,6 +192,9 @@ const QuoteRequestPage: React.FC = () => {
                   placeholder="votre.email@exemple.com"
                   error={errors.email}
                   required
+                  inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
+                  labelClassName="text-[#202124]"
+                  errorClassName="text-[#E85D04]"
                 />
               </div>
 
@@ -194,6 +207,9 @@ const QuoteRequestPage: React.FC = () => {
                 placeholder="06 12 34 56 78"
                 error={errors.phone}
                 required
+                inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
+                labelClassName="text-[#202124]"
+                errorClassName="text-[#E85D04]"
               />
 
               <Input
@@ -204,6 +220,9 @@ const QuoteRequestPage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Votre ville"
                 error={errors.city}
+                inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
+                labelClassName="text-[#202124]"
+                errorClassName="text-[#E85D04]"
               />
 
               <TextArea
@@ -215,6 +234,9 @@ const QuoteRequestPage: React.FC = () => {
                 rows={6}
                 error={errors.description}
                 required
+                textareaClassName="border-[#2C3E50] focus:border-[#E67E22]"
+                labelClassName="text-[#202124]"
+                errorClassName="text-[#E85D04]"
               />
 
               <div className="pt-4">
@@ -223,6 +245,7 @@ const QuoteRequestPage: React.FC = () => {
                   variant="primary"
                   fullWidth
                   disabled={isSubmitting}
+                  className="bg-[#D35400]/70 hover:bg-[#D35400] text-white"
                 >
                   {isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande de devis'}
                 </Button>

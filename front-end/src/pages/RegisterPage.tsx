@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Briefcase, User, Building } from 'lucide-react';
+import { User, Building } from 'lucide-react';
 import {ClientRegister}  from '../components/register/ClientRegister';
 import BusinessRegister  from '../components/register/BusinessRegister';
 import { useAuth } from '../context/AuthContext';
@@ -240,27 +240,26 @@ const RegisterPage: React.FC = () => {
       }
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <Briefcase className="h-12 w-12 text-blue-600" />
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-[#202124]">
           Créer un compte
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-center text-sm text-gray-700">
           Ou{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+          <Link
+            to="/login"
+            className="font-medium text-[#D35400]/70 hover:text-[#D35400]"
+          >
             connectez-vous à votre compte existant
           </Link>
         </p>
       </div>
-
+  
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="flex justify-center space-x-4 mb-6">
+        <div className="bg-white py-10 px-4 shadow sm:rounded-3xl sm:px-10 ">
+          <div className="flex justify-center space-x-4 mb-6 ">
             <button
               type="button"
               onClick={() => {
@@ -268,16 +267,20 @@ const RegisterPage: React.FC = () => {
                 setStep(1);
                 setErrors({});
               }}
-              className={`flex flex-col items-center px-4 py-3 rounded-lg ${
+              className={`flex flex-col items-center px-4 py-3 rounded-lg border-2 ${
                 userType === 'client'
-                  ? 'bg-blue-50 border-2 border-blue-500 text-blue-700'
-                  : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                  ? 'bg-[#D35400]/70 border-[#2C3E50]'
+                  : 'bg-gray-50 border-[#2C3E50] text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <User className={`h-6 w-6 ${userType === 'client' ? 'text-blue-600' : 'text-gray-500'}`} />
+              <User
+                className={`h-6 w-6 ${
+                  userType === 'client' ? 'text-[#D35400]' : 'text-gray-400'
+                }`}
+              />
               <span className="mt-2 font-medium">Client</span>
             </button>
-            
+  
             <button
               type="button"
               onClick={() => {
@@ -285,17 +288,21 @@ const RegisterPage: React.FC = () => {
                 setStep(1);
                 setErrors({});
               }}
-              className={`flex flex-col items-center px-4 py-3 rounded-lg ${
+              className={`flex flex-col items-center px-4 py-3 rounded-lg border-2 ${
                 userType === 'business'
-                  ? 'bg-blue-50 border-2 border-blue-500 text-blue-700'
-                  : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                  ? 'bg-[#D35400]/70 border-[#2C3E50]'
+                  : 'bg-gray-50 border-[#2C3E50] text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Building className={`h-6 w-6 ${userType === 'business' ? 'text-blue-600' : 'text-gray-500'}`} />
+              <Building
+                className={`h-6 w-6 ${
+                  userType === 'business' ? 'text-[#D35400]' : 'text-gray-400'
+                }`}
+              />
               <span className="mt-2 font-medium">Professionnel</span>
             </button>
           </div>
-          
+  
           {userType === 'business' && (
             <div className="mb-6">
               <div className="flex justify-between items-center">
@@ -304,9 +311,9 @@ const RegisterPage: React.FC = () => {
                     key={index}
                     className={`flex items-center justify-center w-8 h-8 rounded-full ${
                       step > index
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-[#D35400] text-white'
                         : step === index + 1
-                        ? 'bg-blue-100 text-blue-600 border-2 border-blue-600'
+                        ? 'bg-[#BFDBFE] text-[#3B82F6] border-2 border-[#3B82F6]'
                         : 'bg-gray-200 text-gray-600'
                     }`}
                   >
@@ -321,7 +328,7 @@ const RegisterPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+  
           {userType === 'client' && (
             <div className="mb-6">
               <div className="flex justify-between items-center">
@@ -330,9 +337,9 @@ const RegisterPage: React.FC = () => {
                     key={index}
                     className={`flex items-center justify-center w-8 h-8 rounded-full ${
                       step > index
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-[#D35400] text-white'
                         : step === index + 1
-                        ? 'bg-blue-100 text-blue-600 border-2 border-blue-600'
+                        ? 'bg-[#BFDBFE] text-[#3B82F6] border-2 border-[#3B82F6]'
                         : 'bg-gray-200 text-gray-600'
                     }`}
                   >
@@ -347,35 +354,34 @@ const RegisterPage: React.FC = () => {
               </div>
             </div>
           )}
-          
-          
-            {userType === 'client' ? (
-              <ClientRegister
-                form={clientForm}
-                step={step}
-                errors={errors}
-                isLoading={isLoading}
-                onChange={handleClientChange}
-                onNextStep={handleNextStep}
-                onPrevStep={handlePrevStep}
-                onSubmit={handleSubmit}
-              />
-            ) : (
-              <BusinessRegister
-                form={businessForm}
-                step={step}
-                errors={errors}
-                isLoading={isLoading}
-                onChange={handleBusinessChange}
-                onNextStep={handleNextStep}
-                onPrevStep={handlePrevStep}
-                onSubmit={handleSubmit}
-              />
-            )}
+  
+          {userType === 'client' ? (
+            <ClientRegister
+              form={clientForm}
+              step={step}
+              errors={errors}
+              isLoading={isLoading}
+              onChange={handleClientChange}
+              onNextStep={handleNextStep}
+              onPrevStep={handlePrevStep}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <BusinessRegister
+              form={businessForm}
+              step={step}
+              errors={errors}
+              isLoading={isLoading}
+              onChange={handleBusinessChange}
+              onNextStep={handleNextStep}
+              onPrevStep={handlePrevStep}
+              onSubmit={handleSubmit}
+            />
+          )}
         </div>
       </div>
     </div>
-  );
+  ) 
 };
 
 export default RegisterPage;

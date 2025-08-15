@@ -1,99 +1,53 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { useNavigate } from 'react-router-dom';
 
-export const ClientRegister: React.FC = () => {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+interface ClientRegisterProps {
+  form: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  };
+  step: number;
+  errors: Record<string, string>;
+  isLoading: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onNextStep: () => void;
+  onPrevStep: () => void;
+  onSubmit: (e: React.FormEvent) => void;
+}
 
-  const [step, setStep] = useState(1);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+export const ClientRegister: React.FC<ClientRegisterProps> = ({
+  form,
+  step,
+  errors,
+  isLoading,
+  onChange,
+  onNextStep,
+  onPrevStep,
+  onSubmit
+}) => {
   const [message, setMessage] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleNextStep = () => {
+  const handleNext = () => {
     const newErrors: Record<string, string> = {};
     if (!form.firstName) newErrors.firstName = 'Prénom requis';
     if (!form.lastName) newErrors.lastName = 'Nom requis';
     if (!form.email) newErrors.email = 'Email requis';
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+      return alert('Veuillez remplir tous les champs requis.');
     }
 
-    setErrors({});
-    setStep(2);
-  };
-
-  const handlePrevStep = () => {
-    setStep(1);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newErrors: Record<string, string> = {};
-    if (!form.password) newErrors.password = 'Mot de passe requis';
-    if (form.password.length < 6) newErrors.password = '6 caractères minimum';
-    if (form.password !== form.confirmPassword)
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/clientregister', form);
-      setMessage("Inscription réussie...");
-
-      setForm({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-      });
-      setStep(1);
-
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-
-    } catch (error: any) {
-      if (error.response) {
-        alert(error.response.data.message);
-      } else {
-        alert('Erreur serveur');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    onNextStep();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       {message && (
-        <p
-          style={{ color: '#44C553' }} // secondary (vert succès)
-          className="font-semibold"
-        >
+        <p className="font-semibold" style={{ color: '#27AE60' }}>
           {message}
         </p>
       )}
@@ -105,12 +59,12 @@ export const ClientRegister: React.FC = () => {
             id="firstName"
             name="firstName"
             value={form.firstName}
-            onChange={handleChange}
+            onChange={onChange}
             error={errors.firstName}
             required
-            labelClassName="text-[#1E1B23]"  // dark
-            errorClassName="text-[#F28C28]"  // orange
-            inputClassName="border-[#2271B1] focus:border-[#F28C28]" // accentblue / orange
+            labelClassName="text-[#34495E]"
+            errorClassName="text-[#E67E22]"
+            inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
           />
 
           <Input
@@ -118,12 +72,12 @@ export const ClientRegister: React.FC = () => {
             id="lastName"
             name="lastName"
             value={form.lastName}
-            onChange={handleChange}
+            onChange={onChange}
             error={errors.lastName}
             required
-            labelClassName="text-[#1E1B23]"
-            errorClassName="text-[#F28C28]"
-            inputClassName="border-[#2271B1] focus:border-[#F28C28]"
+            labelClassName="text-[#34495E]"
+            errorClassName="text-[#E67E22]"
+            inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
           />
 
           <Input
@@ -132,24 +86,24 @@ export const ClientRegister: React.FC = () => {
             name="email"
             type="email"
             value={form.email}
-            onChange={handleChange}
+            onChange={onChange}
             error={errors.email}
             required
-            labelClassName="text-[#1E1B23]"
-            errorClassName="text-[#F28C28]"
-            inputClassName="border-[#2271B1] focus:border-[#F28C28]"
+            labelClassName="text-[#34495E]"
+            errorClassName="text-[#E67E22]"
+            inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
           />
 
           <Button
             type="button"
             variant="primary"
             fullWidth
-            onClick={handleNextStep}
+            onClick={handleNext}
             style={{
-              backgroundColor: '#A6CE39', // primary
-              color: '#FFFFFF',            // light
+              backgroundColor: '#E67E22',
+              color: '#FFFFFF',
             }}
-            className="hover:bg-[#F28C28]" // orange hover
+            className="hover:bg-[#D35400]"
           >
             Continuer
           </Button>
@@ -165,12 +119,12 @@ export const ClientRegister: React.FC = () => {
               name="password"
               type="password"
               value={form.password}
-              onChange={handleChange}
+              onChange={onChange}
               error={errors.password}
               required
-              labelClassName="text-[#1E1B23]"
-              errorClassName="text-[#F28C28]"
-              inputClassName="border-[#2271B1] focus:border-[#F28C28]"
+              labelClassName="text-[#34495E]"
+              errorClassName="text-[#E67E22]"
+              inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
             />
 
             <Input
@@ -179,12 +133,12 @@ export const ClientRegister: React.FC = () => {
               name="confirmPassword"
               type="password"
               value={form.confirmPassword}
-              onChange={handleChange}
+              onChange={onChange}
               error={errors.confirmPassword}
               required
-              labelClassName="text-[#1E1B23]"
-              errorClassName="text-[#F28C28]"
-              inputClassName="border-[#2271B1] focus:border-[#F28C28]"
+              labelClassName="text-[#34495E]"
+              errorClassName="text-[#E67E22]"
+              inputClassName="border-[#2C3E50] focus:border-[#E67E22]"
             />
           </div>
 
@@ -192,22 +146,8 @@ export const ClientRegister: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={handlePrevStep}
-              className="flex-1"
-              style={{
-                borderColor: '#A6CE39', // primary green
-                color: '#A6CE39',
-              }}
-              onMouseOver={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#E85D04'; // orangedark
-                (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
-                (e.currentTarget as HTMLElement).style.borderColor = '#E85D04';
-              }}
-              onMouseOut={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = '#A6CE39';
-                (e.currentTarget as HTMLElement).style.borderColor = '#A6CE39';
-              }}
+              onClick={onPrevStep}
+              className="flex-1 border border-[#2C3E50] text-[#2C3E50] hover:bg-[#D35400] hover:text-white hover:border-[#D35400]"
             >
               Retour
             </Button>
@@ -216,13 +156,12 @@ export const ClientRegister: React.FC = () => {
               type="submit"
               variant="primary"
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 hover:bg-[#D35400]"
               style={{
-                backgroundColor: '#A6CE39',
+                backgroundColor: '#E67E22',
                 color: '#FFFFFF',
                 opacity: isLoading ? 0.7 : 1,
               }}
-              className="hover:bg-[#F28C28]"
             >
               {isLoading ? 'Inscription en cours...' : "S'inscrire"}
             </Button>

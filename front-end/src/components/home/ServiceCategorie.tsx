@@ -1,43 +1,72 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Droplet, Hammer, PaintBucket, Building } from 'lucide-react';
+import { Zap, Droplet, Hammer, PaintBucket, Building, Grid,Layers, Construction, } from 'lucide-react';
 
-const categories = [
+const categories = [ 
   {
     id: 'electricity',
     name: 'Électricité',
     description: 'Installation, réparation et mise aux normes électriques',
-    icon: <Zap className="h-10 w-10 text-accentblue" />,
+    icon: <Zap className="h-10 w-10 text-[#2C3E50]" />,
     link: '/search?sector=Électricité'
   },
   {
     id: 'plumbing',
     name: 'Plomberie',
     description: 'Dépannage, installation et rénovation de plomberie',
-    icon: <Droplet className="h-10 w-10 text-accentblue" />,
+    icon: <Droplet className="h-10 w-10 text-[#2C3E50]" />,
     link: '/search?sector=Plomberie'
   },
   {
     id: 'carpentry',
     name: 'Menuiserie',
     description: 'Fabrication et pose de menuiseries sur mesure',
-    icon: <Hammer className="h-10 w-10 text-accentblue" />,
+    icon: <Hammer className="h-10 w-10 text-[#2C3E50]" />,
     link: '/search?sector=Menuiserie'
   },
   {
     id: 'painting',
     name: 'Peinture',
     description: 'Travaux de peinture intérieure et extérieure',
-    icon: <PaintBucket className="h-10 w-10 text-accentblue" />,
+    icon: <PaintBucket className="h-10 w-10 text-[#2C3E50]" />,
     link: '/search?sector=Peinture'
+  },
+  {
+    id: 'tiling',
+    name: 'Carrelage',
+    description: 'Pose de carreaux mural et au sol, intérieur et extérieur',
+    icon: <Grid className="h-10 w-10 text-[#2C3E50]" />,
+    link: '/search?sector=Carrelage'
+  },
+  {
+    id: 'plastering',
+    name: 'Plâtrerie',
+    description: 'Travaux de plâtrerie : faux plafonds, enduits, décoration de différents models',
+    icon: <Layers className="h-10 w-10 text-[#2C3E50]" />,
+    link: '/search?sector=plâtrerie'
+  },
+  {
+    id: 'rebar',
+    name: 'Ferraillage',
+    description: 'Mise en place d\'armatures en acier pour le béton',
+    icon: <Construction className="h-10 w-10 text-[#2C3E50]" />,
+    link: '/search?sector=Ferraillage'
   },
   {
     id: 'masonry',
     name: 'Maçonnerie',
     description: 'Construction, rénovation et travaux de maçonnerie',
-    icon: <Building className="h-10 w-10 text-accentblue" />,
+    icon: <Building className="h-10 w-10 text-[#2C3E50]" />,
     link: '/search?sector=Maçonnerie'
-  }
+  },
+  
+{
+  id: 'vitrerie',
+  name: 'Vitrerie',
+  description: 'Installation, réparation et travaux de vitrerie',
+  icon: <Grid className="h-10 w-10 text-[#2C3E50]" />,
+  link: '/search?sector=Vitrerie'
+}
 ];
 
 const ServiceCategories: React.FC = () => {

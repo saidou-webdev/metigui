@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Briefcase, User } from 'lucide-react';
+import { Building, User } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
@@ -47,15 +47,21 @@ const LoginPage: React.FC = () => {
 
       if (response.data && response.data.token && response.data.user) {
         const user: UserType = response.data.user;
-        login(user, response.data.token);
-          // Vérification de la redirection
-          console.log('Redirection vers :', userType === 'professionnel' ? '/businessDashboardPage' : '/client/dashboard');
 
+        let normalizedRole = user.role;
+        if (user.role === 'business') {
+          normalizedRole = 'professionnel';
+        }
+        const normalizedUser = { ...user, role: normalizedRole };
 
-        // Redirection selon le rôle
-        if (userType === 'professionnel') {
+        login(normalizedUser, response.data.token);
+
+        // Vider les champs uniquement après connexion réussie
+        setFormData({ identifier: '', password: '' });
+
+        if (normalizedRole === 'professionnel') {
           navigate('/businessDashboardPage');
-        } else if (userType === 'client') {
+        } else if (normalizedRole === 'client') {
           navigate('/client/dashboard');
         } else {
           navigate('/');
@@ -73,15 +79,12 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <Briefcase className="h-12 w-12 text-blue-600" />
-        </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Connexion à votre compte
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Ou{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+          <Link to="/register" className="font-medium text-[#D35400]/70 hover:text-[#D35400]">
             créez un nouveau compte
           </Link>
         </p>
@@ -94,25 +97,33 @@ const LoginPage: React.FC = () => {
               type="button"
               className={`flex flex-col items-center px-4 py-3 rounded-lg border-2 ${
                 userType === 'client'
-                  ? 'bg-blue-50 border-blue-500 text-blue-700'
-                  : 'bg-gray-50 border-gray-200 text-gray-700'
+                  ? 'bg-[#D35400]/70 border-[#2C3E50]'
+                  : 'bg-gray-50 border-[#2C3E50] text-gray-700'
               }`}
               onClick={() => setUserType('client')}
             >
-              <User className="h-6 w-6" />
-              <span className="mt-2 font-medium">Client</span>
+              <User
+                className={`h-6 w-6 ${
+                  userType === 'client' ? 'text-[#D35400]' : 'text-gray-400'
+                }`}
+              />
+              <span className="mt-2 font-medium ">Client</span>
             </button>
 
             <button
               type="button"
               className={`flex flex-col items-center px-4 py-3 rounded-lg border-2 ${
                 userType === 'professionnel'
-                  ? 'bg-blue-50 border-blue-500 text-blue-700'
-                  : 'bg-gray-50 border-gray-200 text-gray-700'
+                  ? 'bg-[#D35400]/70 border-[#2C3E50]'
+                  : 'bg-gray-50 border-[#2C3E50] text-gray-700'
               }`}
               onClick={() => setUserType('professionnel')}
             >
-              <Briefcase className="h-6 w-6" />
+              <Building
+                className={`h-6 w-6 ${
+                  userType === 'professionnel' ? 'text-[#D35400]' : 'text-gray-400'
+                }`}
+              />
               <span className="mt-2 font-medium">Professionnel</span>
             </button>
           </div>
@@ -164,7 +175,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/forgot-password" className="font-medium text-[#D35400]/70 hover:text-[#D35400]">
                   Mot de passe oublié ?
                 </Link>
               </div>

@@ -32,7 +32,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
         </div>
         <div className="flex items-center text-sm text-secondary">
           <Calendar className="h-4 w-4 mr-1" />
-          <span>{new Date(review.createdAt).toLocaleDateString('fr-FR')}</span>
+          <span>{new Date(review.created_at).toLocaleDateString('fr-FR')}</span>
         </div>
       </div>
       <p className="mt-3 text-secondary">{review.comment}</p>

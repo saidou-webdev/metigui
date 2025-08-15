@@ -28,7 +28,8 @@ router.post('/devis', async (req, res) => {
       return res.status(400).json({ message: "Tous les champs sont requis." });
     }
 
-    const sql = `
+    // 1. Insérer le devis
+    const sqlDevis = `
       INSERT INTO devis (
         clientId, businessId, description,
         clientName, clientEmail, clientPhone, clientCity,
@@ -36,15 +37,31 @@ router.post('/devis', async (req, res) => {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
     `;
-    const values = [clientId, businessId, message, clientName, clientEmail, clientPhone, clientCity || null];
+    const valuesDevis = [clientId, businessId, message, clientName, clientEmail, clientPhone, clientCity || null];
 
-    await query(sql, values);
+    const result = await query(sqlDevis, valuesDevis);
+
+   // 2. Créer la notification liée au devis
+const newDevisId = result.insertId;
+
+const sqlNotif = `
+  INSERT INTO notifications (business_id, type, message, link, is_read, created_at)
+  VALUES (?, 'devis', 'Vous avez reçu un nouveau devis.', ?, 0, NOW())
+`;
+
+// Par exemple, un lien vers la page du devis côté front (à adapter si besoin)
+const link = `/business/devis/${newDevisId}`;
+
+await query(sqlNotif, [businessId, link]);
+
+
     res.status(201).json({ message: "✅ Demande de devis envoyée avec succès !" });
   } catch (err) {
     console.error("❌ Erreur lors de la création du devis :", err);
     res.status(500).json({ message: "Erreur serveur." });
   }
 });
+
 
 /** 📄 2. Obtenir les devis d'un client ou d'une entreprise */
 router.get('/devis', async (req, res) => {

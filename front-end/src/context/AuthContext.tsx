@@ -15,7 +15,9 @@ interface AuthContextType {
   token: string | null;
   login: (user: User, token: string) => void;
   logout: () => void;
-  register: (userData: Client | Business, role: 'client' | 'professionnel') => Promise<boolean>;
+  register: (userData: Client | Business, role: 'client' | 'professionnel') => Promise<{ success: boolean; message: string }>;
+  successMessage: string;
+  setSuccessMessage: React.Dispatch<React.SetStateAction<string>>;
   isLoading: boolean;
 }
 
@@ -25,7 +27,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // <- pour indiquer le chargement
+  const [isLoading, setIsLoading] = useState<boolean>(true); 
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   useEffect(() => {
     try {
@@ -33,14 +36,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const storedToken = localStorage.getItem('authToken');
 
       if (storedUser && storedToken) {
-        setCurrentUser(JSON.parse(storedUser));
-        setToken(storedToken);
-        setIsAuthenticated(true);
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.role === 'business') {
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem('authToken');
+          setCurrentUser(null);
+          setToken(null);
+          setIsAuthenticated(false);
+        } else {
+          setCurrentUser(parsedUser);
+          setToken(storedToken);
+          setIsAuthenticated(true);
+        }
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des données du localStorage', error);
     } finally {
-      setIsLoading(false); // <- on arrête le chargement une fois les données traitées
+      setIsLoading(false);
     }
   }, []);
 
@@ -51,6 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(user));
       localStorage.setItem('authToken', token);
+      setSuccessMessage('Connexion réussie !');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la session', error);
     }
@@ -59,11 +72,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (
     userData: Client | Business,
     role: 'client' | 'professionnel'
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; message: string }> => {
     try {
-      const endpoint = role === 'professionnel' ? 'register-entreprise' : 'register-client';
+      const endpoint = role === 'professionnel' ? 'businessregister' : 'clientregister';
 
-      const response = await fetch(`http://localhost:5000/${endpoint}`, {
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,14 +87,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
 
       if (response.ok) {
-        return true;
+        setSuccessMessage(data.message || 'Inscription réussie !');
+        return { success: true, message: data.message || 'Inscription réussie !' };
       } else {
-        console.error(data.message || 'Erreur lors de l’inscription');
-        return false;
+        return { success: false, message: data.message || 'Erreur lors de l’inscription' };
       }
     } catch (error) {
       console.error('Erreur d\'inscription:', error);
-      return false;
+      return { success: false, message: 'Erreur d’inscription, veuillez réessayer.' };
     }
   };
 
@@ -91,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('authToken');
+    setSuccessMessage('');
   };
 
   const authContextValue = useMemo<AuthContextType>(() => ({
@@ -100,8 +114,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     register,
+    successMessage,
+    setSuccessMessage,
     isLoading
-  }), [currentUser, token, isAuthenticated, isLoading]);
+  }), [currentUser, token, isAuthenticated, isLoading, successMessage]);
 
   return (
     <AuthContext.Provider value={authContextValue}>

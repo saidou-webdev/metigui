@@ -11,14 +11,11 @@ export interface Client extends User {
   phone?: string; // facultatif
   city?: string;  // facultatif
 }
-
 export interface Business extends User {
   name: string;
   sector: string;
-  location: {
-    city: string;
-    district: string;
-  };
+  city: string;
+  district: string;
   phone: string;
   description: string;
   yearsOfExperience: number;
@@ -26,7 +23,9 @@ export interface Business extends User {
   rating: number;
   projects: Project[];
   reviews: Review[];
+  profileImage?: string; // ✅ ajouter ici
 }
+
 
 export interface Project {
   id: string;
@@ -45,7 +44,7 @@ export interface Review {
   clientName: string;
   rating: number;
   comment: string;
-  createdAt: string;
+  created_at: string;  // underscore _ au lieu de tiret -
 }
 
 export interface QuoteRequest {

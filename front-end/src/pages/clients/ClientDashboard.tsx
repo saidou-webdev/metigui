@@ -81,14 +81,14 @@ const ClientDashboardPage: React.FC = () => {
   const client = currentUser as any;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="bg-gray-50 min-h-screen w-full">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-            <p className="mt-1 text-gray-600">
-              Bienvenue, {client.firstName} {client.lastName}
+            <p className="mt-1 text-2xl text-gray-600">
+              Bienvenue sur vôtre tableau de bord, {client.firstName} {client.lastName}
             </p>
           </div>
           <div className="mt-4 md:mt-0">
@@ -102,7 +102,7 @@ const ClientDashboardPage: React.FC = () => {
           {/* Sidebar */}
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 bg-blue-600 text-white">
+              <div className="p-6 bg-[#2C3E50]/95 text-white">
                 <div className="flex items-center">
                   <div className="bg-white rounded-full p-2">
                     <User className="h-6 w-6 text-blue-600" />
@@ -174,7 +174,8 @@ const ClientDashboardPage: React.FC = () => {
                 )}
 
                 {!loadingRequests && !errorLoading && quoteRequests.length > 0 && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[420px] overflow-y-auto pr-2"
+                  style={{ scrollbarWidth: 'thin' }}>
                     {quoteRequests.map(request => (
                       <QuoteRequestCard
                         key={request.id}

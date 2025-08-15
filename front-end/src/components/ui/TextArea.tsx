@@ -7,6 +7,8 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   textareaClassName?: string;
   labelClassName?: string;
   errorClassName?: string;
+  id?: string;
+  className?: string; // optionnel pour compatibilité
 }
 
 const TextArea: React.FC<TextAreaProps> = ({
@@ -25,7 +27,7 @@ const TextArea: React.FC<TextAreaProps> = ({
         <label
           htmlFor={id}
           className={cn(
-            "block text-sm font-medium text-[#202124]",
+            "block text-sm font-medium text-[#202124]", // gris foncé
             labelClassName
           )}
         >
@@ -37,7 +39,7 @@ const TextArea: React.FC<TextAreaProps> = ({
         className={cn(
           'flex min-h-[80px] w-full rounded-md border border-[#1E1B23] bg-[#FFFFFF] px-3 py-2 text-sm placeholder:text-[#5F6368] focus:outline-none focus:ring-2 focus:ring-[#A6CE39] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50',
           {
-            'border-[#E85D04] focus:ring-[#E85D04]': error,
+            'border-[#E85D04] focus:ring-[#E85D04]': error, // orange erreur
           },
           textareaClassName,
           className

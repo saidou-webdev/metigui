@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const connection = require('../db');
 
 // Configuration de stockage des fichiers
@@ -30,7 +31,9 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ storage, fileFilter });
 
-// ✅ ROUTE POST pour uploader des réalisations
+/** =====================================
+ * ROUTE POST : Upload de nouvelles réalisations
+ * ===================================== */
 router.post('/upload', upload.array('images', 5), async (req, res) => {
   try {
     const businessId = parseInt(req.body.businessId);
@@ -67,7 +70,9 @@ router.post('/upload', upload.array('images', 5), async (req, res) => {
   }
 });
 
-// ✅ ROUTE GET pour récupérer les réalisations
+/** =====================================
+ * ROUTE GET : Récupérer les réalisations
+ * ===================================== */
 router.get('/business/:id', (req, res) => {
   const businessId = parseInt(req.params.id);
 
@@ -88,33 +93,83 @@ router.get('/business/:id', (req, res) => {
   });
 });
 
-
-// Modifier une réalisation (PUT)
-router.put('/realisations/:id', (req, res) => {
+/** =====================================
+ * ROUTE PUT : Modifier une réalisation (image + description)
+ * ===================================== */
+router.put('/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
   const { description } = req.body;
 
-  const sql = 'UPDATE realisations SET description = ? WHERE id = ?';
-  connection.query(sql, [description, id], (err, result) => {
-    if (err) {
-      console.error('Erreur mise à jour réalisation:', err);
-      return res.status(500).json({ message: 'Erreur serveur lors de la mise à jour.' });
+  const getOldSql = 'SELECT filename FROM realisations WHERE id = ?';
+  connection.query(getOldSql, [id], (err, rows) => {
+    if (err || rows.length === 0) {
+      return res.status(500).json({ message: 'Réalisation non trouvée ou erreur.' });
     }
-    res.status(200).json({ message: 'Réalisation mise à jour avec succès.' });
+
+    const oldFilename = rows[0].filename;
+
+    // Si nouvelle image
+    if (req.file) {
+      const newFilename = req.file.filename;
+      const updateSql = 'UPDATE realisations SET filename = ?, description = ? WHERE id = ?';
+
+      connection.query(updateSql, [newFilename, description, id], (err2) => {
+        if (err2) {
+          console.error('Erreur update avec image :', err2);
+          return res.status(500).json({ message: 'Erreur mise à jour.' });
+        }
+
+        // Supprimer ancienne image
+        const oldPath = path.join('uploads/realisations', oldFilename);
+        fs.unlink(oldPath, (unlinkErr) => {
+          if (unlinkErr) console.warn('Ancienne image non supprimée :', unlinkErr.message);
+        });
+
+        res.status(200).json({ message: 'Réalisation mise à jour (image + description).' });
+      });
+
+    } else {
+      // Mise à jour sans image
+      const sql = 'UPDATE realisations SET description = ? WHERE id = ?';
+      connection.query(sql, [description, id], (err3) => {
+        if (err3) {
+          console.error('Erreur update description :', err3);
+          return res.status(500).json({ message: 'Erreur mise à jour.' });
+        }
+
+        res.status(200).json({ message: 'Réalisation mise à jour (description seule).' });
+      });
+    }
   });
 });
 
-// Supprimer une réalisation (DELETE)
-router.delete('/realisations/:id', (req, res) => {
+/** =====================================
+ * ROUTE DELETE : Supprimer une réalisation
+ * ===================================== */
+router.delete('/:id', (req, res) => {
   const { id } = req.params;
 
-  const sql = 'DELETE FROM realisations WHERE id = ?';
-  connection.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error('Erreur suppression réalisation:', err);
-      return res.status(500).json({ message: 'Erreur serveur lors de la suppression.' });
+  // Supprimer l’image d’abord
+  const sqlGet = 'SELECT filename FROM realisations WHERE id = ?';
+  connection.query(sqlGet, [id], (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(500).json({ message: 'Erreur ou réalisation introuvable.' });
     }
-    res.status(200).json({ message: 'Réalisation supprimée avec succès.' });
+
+    const imagePath = path.join('uploads/realisations', results[0].filename);
+    fs.unlink(imagePath, (errUnlink) => {
+      if (errUnlink) console.warn('Image non supprimée :', errUnlink.message);
+    });
+
+    // Supprimer la réalisation
+    const sqlDelete = 'DELETE FROM realisations WHERE id = ?';
+    connection.query(sqlDelete, [id], (err2) => {
+      if (err2) {
+        console.error('Erreur suppression réalisation:', err2);
+        return res.status(500).json({ message: 'Erreur serveur lors de la suppression.' });
+      }
+      res.status(200).json({ message: 'Réalisation supprimée avec succès.' });
+    });
   });
 });
 

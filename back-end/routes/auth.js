@@ -8,33 +8,46 @@ const connection = require('../db'); // adapte le chemin si besoin
 const JWT_SECRET = process.env.JWT_SECRET || 'ta_clef_secrete_super_secrete';
 
 router.post('/login', (req, res) => {
-  const { identifier, password, userType } = req.body;
+  let { identifier, password, userType } = req.body;
+
+  console.log('[LOGIN] Requête reçue:', { identifier, userType });
 
   if (!identifier || !password || !userType) {
+    console.log('[LOGIN] Champs requis manquants');
     return res.status(400).json({ message: 'Champs requis manquants' });
   }
 
+  // Normalisation du type d'utilisateur
   let tableName = '';
   if (userType === 'client') {
     tableName = 'client';
-  } else if (userType === 'professionnel') {
+  } else if (userType === 'professionnel' || userType === 'business') {
     tableName = 'entreprises';
+    userType = 'professionnel'; // 🔹 On normalise toujours en "professionnel"
   } else {
+    console.log('[LOGIN] Type d’utilisateur invalide:', userType);
     return res.status(400).json({ message: 'Type d’utilisateur invalide' });
   }
 
   const sql = `SELECT * FROM ${tableName} WHERE email = ?`;
   connection.query(sql, [identifier], (err, results) => {
-    if (err) return res.status(500).json({ message: 'Erreur serveur' });
+    if (err) {
+      console.error('[LOGIN] Erreur SQL:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
 
     if (results.length === 0) {
+      console.log('[LOGIN] Utilisateur non trouvé pour email:', identifier);
       return res.status(401).json({ message: 'Utilisateur non trouvé' });
     }
 
     const user = results[0];
     const isMatch = bcrypt.compareSync(password, user.password);
 
+    console.log('[LOGIN] Mot de passe match:', isMatch);
+
     if (!isMatch) {
+      console.log('[LOGIN] Mot de passe incorrect pour email:', identifier);
       return res.status(401).json({ message: 'Mot de passe incorrect' });
     }
 
@@ -42,12 +55,14 @@ router.post('/login', (req, res) => {
     const tokenPayload = {
       id: user.id,
       email: user.email,
-      type: userType,
+      type: userType, // sera toujours "client" ou "professionnel"
       name: user.name || `${user.firstName} ${user.lastName}`
     };
 
     // Génère le token JWT (valable 1h)
     const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1h' });
+
+    console.log('[LOGIN] Connexion réussie pour:', user.email);
 
     res.status(200).json({
       message: 'Connexion réussie',
@@ -56,7 +71,7 @@ router.post('/login', (req, res) => {
         id: user.id,
         name: user.name || `${user.firstName} ${user.lastName}`,
         email: user.email,
-        role: userType
+        role: userType // 🔹 toujours "client" ou "professionnel"
       }
     });
   });

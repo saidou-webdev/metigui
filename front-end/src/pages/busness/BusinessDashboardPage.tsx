@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, User, Settings, LogOut, BarChart2, Image, Star } from 'lucide-react';
+import { FileText, User, Settings, LogOut, BarChart2, Image, Star, Bell } from 'lucide-react';
 import { Business, QuoteRequest } from '../../types';
 import QuoteRequestCard from '../../components/client/QuoteRequestCard';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import QuoteResponseModal from '../../components/busness/QuoteResponseModal';
+import EditRealisationModal from '../../components/busness/EditRealisationModal';
+import ProfileImages from '../../components/ProfileImages';
 
 import axios from 'axios';
-
-  const BusinessDashboardPage: React.FC = () => {
+const BusinessDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+
   const [selectedQuoteId, setSelectedQuoteId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'projects' | 'profile' | 'settings'>('overview');
@@ -20,20 +22,23 @@ import axios from 'axios';
   const [isEditing, setIsEditing] = useState(false);
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
   const [realisations, setRealisations] = useState<any[]>([]);
-
-
-
+  const [selectedRealisation, setSelectedRealisation] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (!currentUser) return;
 
-    if (!currentUser || currentUser.role !== 'professionnel') {
+    if (currentUser.role !== 'professionnel') {
       navigate('/login');
       return;
     }
 
-    axios.get(`http://localhost:5000/api/entreprises/${currentUser.id}`)
-      .then(res => {
+    const fetchBusinessData = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/entreprises/${currentUser.id}`);
         const data = res.data;
         data.projects = data.projects || [];
         data.reviews = data.reviews || [];
@@ -42,28 +47,75 @@ import axios from 'axios';
         data.yearsOfExperience = data.yearsOfExperience || 0;
         setBusiness(data);
         setEditableBusiness({ ...data });
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Erreur chargement entreprise :', err);
-      });
+      }
+    };
 
-      axios.get(`http://localhost:5000/api/realisations/business/${currentUser.id}`)
-  .then(res => {
-    setRealisations(res.data);
-  })
-  .catch(err => {
-    console.error('Erreur récupération des réalisations :', err);
-  });
+    const fetchRealisations = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/realisations/business/${currentUser.id}`);
+        setRealisations(res.data);
+      } catch (err) {
+        console.error('Erreur récupération des réalisations :', err);
+      }
+    };
 
-
-    axios.get(`http://localhost:5000/api/devis?businessId=${currentUser.id}`)
-      .then(res => {
+    const fetchQuoteRequests = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/devis?businessId=${currentUser.id}`);
         setQuoteRequests(res.data);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Erreur chargement des devis :', err);
-      });
+      }
+    };
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/notifications/${currentUser.id}`);
+        setNotifications(res.data);
+        setNotificationCount(res.data.length);
+      } catch (err) {
+        console.error('Erreur chargement notifications :', err);
+      }
+    };
+
+    fetchBusinessData();
+    fetchRealisations();
+    fetchQuoteRequests();
+    fetchNotifications();
+
   }, [currentUser, navigate]);
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const markNotificationAsRead = async (notificationId: number, notification: any) => {
+    try {
+      await axios.put(`http://localhost:5000/api/notifications/read/${notificationId}`);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotificationCount(prev => prev - 1);
+
+      setShowNotifications(false);
+
+      switch (notification.type) {
+        case 'message':
+          navigate(`/messages/${notification.data.conversationId}`);
+          break;
+        case 'devis':
+          navigate(`/quote-request/${notification.data.quoteId}`);
+          break;
+        case 'review':
+          navigate(`/business/${currentUser.id}`);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Erreur marquage notification comme lue :', error);
+    }
+  };
 
   const handleEditToggle = () => {
     if (isEditing && editableBusiness) {
@@ -97,6 +149,7 @@ import axios from 'axios';
     logout();
     navigate('/');
   };
+
   const handleUpdateStatus = async (devisId: string, status: 'responded' | 'refused') => {
     try {
       const response = await axios.patch(`http://localhost:5000/api/devis/${devisId}/status`, {
@@ -115,7 +168,7 @@ import axios from 'axios';
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Voulez-vous vraiment supprimer cette réalisation ?')) return;
-  
+
     try {
       await axios.delete(`http://localhost:5000/api/realisations/${id}`);
       setRealisations(prev => prev.filter(real => real.id !== id));
@@ -124,9 +177,6 @@ import axios from 'axios';
       alert('Erreur lors de la suppression.');
     }
   };
-  
-  
-
 
   if (!currentUser || !business || !editableBusiness) return null;
 
@@ -134,15 +184,14 @@ import axios from 'axios';
   const respondedRequests = quoteRequests.filter(req => req.status === 'responded');
   const completedRequests = quoteRequests.filter(req => req.status === 'completed');
 
-
-  return (
-    <div className="bg-graylight min-h-screen text-textdark">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    return (
+    <div className="bg-graylight min-h-screen text-textdark w-full">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-textdark">Tableau de bord</h1>
-            <p className="mt-1 text-subtext">
-              Bienvenue, {business.name}
+            <p className="mt-1 text-2xl text-gray-600">
+              Bienvenue sur vôtre tableau de bord, {business.name}
             </p>
           </div>
           <div className="mt-4 md:mt-0">
@@ -156,14 +205,61 @@ import axios from 'axios';
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 bg-accentblue text-white">
-                <div className="flex items-center">
-                  <div className="bg-white rounded-full p-2">
-                    <User className="h-6 w-6 text-accentblue" />
+              <div className="p-6 bg-[#2C3E50]/95 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {business && (
+                      <div className="bg-white rounded-full w-12 h-12 overflow-hidden">
+                        <ProfileImages
+                          userId={business.id }
+                          role="professionnel"
+                          initialUrl={business.profileImage} // correction ici
+                          onUploaded={(url) => setBusiness({ ...business, profileImage: url })}
+                        />
+                      </div>
+                    )}
+
+                    <div className="ml-3">
+                      <p className="font-medium">{business.name}</p>
+                      <p className="text-sm text-white/80">{business.sector}</p>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="font-medium">{business.name}</p>
-                    <p className="text-sm text-accentblue/80">{business.sector}</p>
+                  {/* Icon notifications avec badge */}
+                  
+                  <div className="relative">
+                    <div
+                      className="relative cursor-pointer" onClick={toggleNotifications}title="Notifications" >
+                      <Bell className="h-6 w-6 text-white" />
+                      {notificationCount > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                          {notificationCount}
+                        </span>
+                      )}
+                    </div>
+                    {/* Dropdown notifications */}
+                    {showNotifications && (
+                      <div
+                         className={`absolute right-0 top-12 w-80 bg-white shadow-lg rounded-md z-50 border border-gray-200 ${
+                         notifications.length > 4 ? 'max-h-96 overflow-auto' : ''
+                          }`}
+                        >
+                          {notifications.length === 0 ? (
+                          <p className="p-4 text-center text-gray-600">Aucune notification</p>
+                        ) : (
+                          notifications.map(notification => (
+                            <div
+                              key={notification.id}
+                              className="px-4 py-3 border-b cursor-pointer hover:bg-gray-100"
+                              onClick={() => markNotificationAsRead(notification.id, notification)}
+                            >
+                              <p className="text-sm font-semibold">{notification.title}</p>
+                              <p className="text-xs text-gray-500">{notification.message}</p>
+                              <p className="text-xs text-gray-400">{new Date(notification.created_at).toLocaleString()}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -260,7 +356,6 @@ import axios from 'axios';
             </div>
           </div>
 
-          
           {/* Main content */}
           <div className="md:col-span-3">
             {activeTab === 'overview' && (
@@ -308,7 +403,7 @@ import axios from 'axios';
                   
                   {pendingRequests.length > 0 ? (
                     <div className="space-y-4">
-                    {pendingRequests.slice(0, 2).map(request => (
+                      {pendingRequests.slice(0, 2).map(request => (
                         <div key={request.id} className="border p-4 rounded shadow-sm flex justify-between items-center">
                           <div>
                             {/* Affiche infos de la demande, par exemple: */}
@@ -317,13 +412,12 @@ import axios from 'axios';
                             {/* etc. */}
                           </div>
                           <div className="space-x-2">
-                          <Button variant="primary" onClick={() => {
+                            <Button variant="primary" onClick={() => {
                               setSelectedQuoteId(Number(request.id));
                               setIsModalOpen(true);
-                               }}>
+                            }}>
                               Répondre
-                          </Button>
-
+                            </Button>
                             <Button
                               variant="outline"
                               onClick={() => handleUpdateStatus(request.id, 'refused')}
@@ -417,14 +511,13 @@ import axios from 'axios';
                               />
                             ))}
                           </div>
-                            <span className="ml-2 text-xl font-bold">
-                              {typeof business.rating === 'number' ? business.rating.toFixed(1) : '0.0'}
-                            </span>
+                          <span className="ml-2 text-xl font-bold">
+                            {typeof business.rating === 'number' ? business.rating.toFixed(1) : '0.0'}
+                          </span>
                         </div>
                         <p className="text-sm text-gray-600">
-                             Basé sur {business.reviews?.length ?? 0} avis clients
+                          Basé sur {business.reviews?.length ?? 0} avis clients
                         </p>
-
                       </div>
                     </div>
                   </div>
@@ -463,7 +556,7 @@ import axios from 'axios';
                   </div>
                   
                   {quoteRequests.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                       {quoteRequests.map(request => (
                         <QuoteRequestCard key={request.id} quoteRequest={request} businessView={true} />
                       ))}
@@ -489,11 +582,10 @@ import axios from 'axios';
                     <Button variant="primary" onClick={() => navigate('/add-realisation')}>
                       Ajouter une réalisation
                     </Button>
-
                   </div>
                   
-                   {realisations.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {realisations.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[420px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                       {realisations.map(real => (
                         <div key={real.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                           <div className="h-48 overflow-hidden">
@@ -507,16 +599,20 @@ import axios from 'axios';
                             <h3 className="text-lg font-bold text-gray-900">Réalisation #{real.id}</h3>
                             <p className="mt-2 text-gray-600 text-sm">{real.description}</p>
                             <div className="mt-4 flex justify-end space-x-2">
-                              <Button variant="outline" size="sm">Modifier</Button>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                setSelectedRealisation(real);
+                                setIsEditModalOpen(true);
+                              }}>
+                                Modifier
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleDelete(real.id)}
-                               >
+                              >
                                 Supprimer
                               </Button>
-
                             </div>
                           </div>
                         </div>
@@ -532,7 +628,6 @@ import axios from 'axios';
                       <Button variant="primary" onClick={() => navigate('/add-realisation')}>
                         Ajouter ma première réalisation
                       </Button>
-
                     </div>
                   )}
                 </div>
@@ -540,96 +635,95 @@ import axios from 'axios';
             )}
             
             {activeTab === 'profile' && (
-  <div className="bg-white rounded-lg shadow-md p-6">
-    <h2 className="text-xl font-bold text-gray-900 mb-6">Mon profil</h2>
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Nom de l'entreprise</h3>
-          {isEditing ? (
-            <input value={editableBusiness.name} onChange={(e) => handleInputChange('name', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.name}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Secteur d'activité</h3>
-          {isEditing ? (
-            <input value={editableBusiness.sector} onChange={(e) => handleInputChange('sector', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.sector}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Email</h3>
-          {isEditing ? (
-            <input value={editableBusiness.email} onChange={(e) => handleInputChange('email', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.email}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Téléphone</h3>
-          {isEditing ? (
-            <input value={editableBusiness.phone} onChange={(e) => handleInputChange('phone', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.phone}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Ville</h3>
-          {isEditing ? (
-            <input value={editableBusiness.location.city} onChange={(e) => handleInputChange('location.city', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.location.city}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Quartier</h3>
-          {isEditing ? (
-            <input value={editableBusiness.location.district} onChange={(e) => handleInputChange('location.district', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.location.district}</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Années d'expérience</h3>
-          {isEditing ? (
-            <input value={editableBusiness.yearsOfExperience} onChange={(e) => handleInputChange('yearsOfExperience', Number(e.target.value))} type="number" className="mt-1 border rounded w-full px-2 py-1" />
-          ) : (
-            <p className="mt-1 text-gray-900">{business.yearsOfExperience} ans</p>
-          )}
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Mise en avant</h3>
-          <p className="mt-1 text-gray-900">{business.featured ? 'Oui' : 'Non'}</p>
-        </div>
-      </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Mon profil</h2>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Nom de l'entreprise</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.name} onChange={(e) => handleInputChange('name', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Secteur d'activité</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.sector} onChange={(e) => handleInputChange('sector', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.sector}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.email} onChange={(e) => handleInputChange('email', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.email}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Téléphone</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.phone} onChange={(e) => handleInputChange('phone', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.phone}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Ville</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.city} onChange={(e) => handleInputChange('location.city', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.city}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Quartier</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.district} onChange={(e) => handleInputChange('location.district', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.district}</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Années d'expérience</h3>
+                      {isEditing ? (
+                        <input value={editableBusiness.yearsOfExperience} onChange={(e) => handleInputChange('yearsOfExperience', Number(e.target.value))} type="number" className="mt-1 border rounded w-full px-2 py-1" />
+                      ) : (
+                        <p className="mt-1 text-gray-900">{business.yearsOfExperience} ans</p>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Mise en avant</h3>
+                      <p className="mt-1 text-gray-900">{business.featured ? 'Oui' : 'Non'}</p>
+                    </div>
+                  </div>
 
-      <div>
-        <h3 className="text-sm font-medium text-gray-500">Description</h3>
-        {isEditing ? (
-          <textarea value={editableBusiness.description} onChange={(e) => handleInputChange('description', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
-        ) : (
-          <p className="mt-1 text-gray-900">{business.description}</p>
-        )}
-      </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Description</h3>
+                    {isEditing ? (
+                      <textarea value={editableBusiness.description} onChange={(e) => handleInputChange('description', e.target.value)} className="mt-1 border rounded w-full px-2 py-1" />
+                    ) : (
+                      <p className="mt-1 text-gray-900">{business.description}</p>
+                    )}
+                  </div>
 
-      <div className="pt-6 border-t border-gray-200 flex space-x-4">
-        <Button variant="outline" onClick={handleEditToggle}>
-          {isEditing ? 'Enregistrer les modifications' : 'Modifier mon profil'}
-        </Button>
-        {isEditing && (
-          <Button variant="ghost" onClick={() => { setIsEditing(false); setEditableBusiness(business); }}>
-            Annuler
-          </Button>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+                  <div className="pt-6 border-t border-gray-200 flex space-x-4">
+                    <Button variant="outline" onClick={handleEditToggle}>
+                      {isEditing ? 'Enregistrer les modifications' : 'Modifier mon profil'}
+                    </Button>
+                    {isEditing && (
+                      <Button variant="ghost" onClick={() => { setIsEditing(false); setEditableBusiness(business); }}>
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-            
             {activeTab === 'settings' && (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Paramètres</h2>
@@ -689,7 +783,8 @@ import axios from 'axios';
                   
                   <div className="pt-6 border-t border-gray-200">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Sécurité</h3>
-                    <Button variant="outline">Changer mon mot de passe</Button> </div>
+                    <Button variant="outline">Changer mon mot de passe</Button>
+                  </div>
                   
                   <div className="pt-6 border-t border-gray-200">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Compte</h3>
@@ -702,8 +797,8 @@ import axios from 'axios';
             )}
           </div>
         </div>
-      </div>
-              {selectedQuoteId && (
+
+        {selectedQuoteId && (
           <QuoteResponseModal
             devisId={selectedQuoteId}
             isOpen={isModalOpen}
@@ -715,10 +810,20 @@ import axios from 'axios';
           />
         )}
 
+        {selectedRealisation && (
+          <EditRealisationModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            realisation={selectedRealisation}
+            onSuccess={async () => {
+              const updated = await axios.get(`http://localhost:5000/api/realisations/business/${currentUser.id}`);
+              setRealisations(updated.data);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };
-
-
 
 export default BusinessDashboardPage;

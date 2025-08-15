@@ -4,21 +4,21 @@ import { Star } from 'lucide-react';
 const testimonials = [
   {
     id: 1,
-    name: 'Sophie Martin',
+    name: 'Aminata Camara',
     role: 'Propriétaire',
     content: 'J\'ai trouvé un excellent électricien grâce à MeTiGui. Le service était rapide et professionnel. Je recommande vivement cette plateforme !',
     rating: 5
   },
   {
     id: 2,
-    name: 'Thomas Dubois',
+    name: 'Jean Siba kamano',
     role: 'Gérant de copropriété',
     content: 'En tant que gestionnaire d\'immeuble, je dois souvent faire appel à des artisans. MeTiGui m\'a permis de constituer un réseau de professionnels fiables.',
     rating: 5
   },
   {
     id: 3,
-    name: 'Julie Leroy',
+    name: 'Alpha Boubacar Diallo',
     role: 'Particulier',
     content: 'La demande de devis est simple et rapide. J\'ai reçu plusieurs propositions en moins de 24h pour ma rénovation de salle de bain.',
     rating: 4

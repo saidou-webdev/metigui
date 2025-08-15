@@ -5,7 +5,12 @@ import { Business } from '../types';
 import Button from '../components/ui/Button';
 import ProjectCard from '../components/busness/ProjectCard';
 import ReviewCard from '../components/busness/ReviewCard';
+import { useAuth } from '../context/AuthContext'; 
+import TextArea from '../components/ui/TextArea';
 import axios from 'axios';
+
+// Import contexte d'auth (à adapter si tu n'as pas encore)
+ // si tu as ce composant, sinon remplace par textarea classique
 
 const BusinessProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,12 +18,19 @@ const BusinessProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'projects' | 'reviews'>('projects');
   const [realisations, setRealisations] = useState<any[]>([]);
 
+  const { currentUser, isAuthenticated } = useAuth();
+
+  // Nouveaux états pour avis
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [loadingReview, setLoadingReview] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
     if (!id) return;
 
-    // Charger les infos de l'entreprise
+    // Charger les infos de l'entreprise (avec ses avis)
     axios.get(`http://localhost:5000/api/entreprises/${id}`)
       .then((res) => {
         setBusiness(res.data);
@@ -36,6 +48,39 @@ const BusinessProfilePage: React.FC = () => {
         console.error('Erreur chargement réalisations :', err);
       });
   }, [id]);
+
+  const submitReview = async () => {
+    if (!isAuthenticated) {
+      alert("Vous devez être connecté pour laisser un avis.");
+      return;
+    }
+    if (rating === 0) {
+      alert("Merci de sélectionner une note.");
+      return;
+    }
+
+    setLoadingReview(true);
+
+    try {
+      await axios.post("http://localhost:5000/api/reviews", {
+        businessId: id,
+        clientId: currentUser?.id,
+        rating,
+        comment
+      });
+
+      // Recharger les données après ajout pour mettre à jour la liste des avis et la note moyenne
+      const res = await axios.get(`http://localhost:5000/api/entreprises/${id}`);
+      setBusiness(res.data);
+      setRating(0);
+      setComment('');
+    } catch (err) {
+      console.error("Erreur ajout avis :", err);
+      alert("Erreur lors de l'envoi de votre avis.");
+    } finally {
+      setLoadingReview(false);
+    }
+  };
 
   if (!business) {
     return (
@@ -70,7 +115,7 @@ const BusinessProfilePage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen pb-12">
       {/* Header */}
-      <div className="bg-blue-700 text-white py-12">
+      <div className="bg-[#2C3E50]/90 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between">
             <div>
@@ -88,7 +133,7 @@ const BusinessProfilePage: React.FC = () => {
               <div className="mt-2 flex items-center">
                 <MapPin className="h-5 w-5 mr-2" />
                 <span>
-                  {business.location?.city ?? 'Ville non renseignée'}, {business.location?.district ?? 'Quartier non renseigné'}
+                  {business.city ?? 'Ville non renseignée'}, {business.district ?? 'Quartier non renseigné'}
                 </span>
               </div>
               <div className="mt-2 flex items-center">
@@ -155,18 +200,17 @@ const BusinessProfilePage: React.FC = () => {
             {realisations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {realisations.map(real => (
-            <ProjectCard
-            key={real.id}
-            project={{
-              id: String(real.id),
-              businessId: String(real.business_id), // 👈 à ajouter
-              title: `Réalisation #${real.id}`,
-              description: real.description,
-              imageUrl: `http://localhost:5000/uploads/realisations/${real.filename}`,
-              createdAt: real.created_at, // 👈 à ajouter
-            }}
-          />
-             
+                  <ProjectCard
+                    key={real.id}
+                    project={{
+                      id: String(real.id),
+                      businessId: String(real.business_id),
+                      title: `Réalisation #${real.id}`,
+                      description: real.description,
+                      imageUrl: `http://localhost:5000/uploads/realisations/${real.filename}`,
+                      createdAt: real.created_at,
+                    }}
+                  />
                 ))}
               </div>
             ) : (
@@ -183,12 +227,40 @@ const BusinessProfilePage: React.FC = () => {
 
         {activeTab === 'reviews' && (
           <>
-            {reviewsCount > 0 ? (
-              <div className="space-y-6">
-                {business.reviews!.map(review => (
-                  <ReviewCard key={review.id} review={review} />
-                ))}
+            {/* Formulaire d'avis pour client connecté */}
+            {isAuthenticated && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4">Donnez votre avis</h3>
+                <div className="flex mb-3">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star
+                      key={index}
+                      className={`h-6 w-6 cursor-pointer ${index < rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                      onClick={() => setRating(index + 1)}
+                    />
+                  ))}
+                </div>
+                <TextArea
+                  placeholder="Votre avis..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  className="mb-3"
+                />
+                <Button variant="primary" onClick={submitReview} disabled={loadingReview}>
+                  {loadingReview ? "Envoi..." : "Envoyer"}
+                </Button>
               </div>
+            )}
+
+              {reviewsCount > 0 ? (
+                <div
+                  className="space-y-6"
+                  style={reviewsCount > 4 ? { maxHeight: '600px', overflowY: 'auto' } : undefined}>
+                  {business.reviews!.map(review => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
                 <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />

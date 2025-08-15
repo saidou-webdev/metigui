@@ -37,7 +37,7 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business, featured = false 
         <div className="mt-4 flex items-start space-x-2">
           <MapPin className="h-5 w-5 text-secondary mt-0.5" />
           <span className="text-secondary">
-            {business.location?.city || 'Ville inconnue'}, {business.location?.district || 'Quartier inconnu'}
+            {business.city || 'Ville inconnue'}, {business.district || 'Quartier inconnu'}
           </span>
         </div>
 
